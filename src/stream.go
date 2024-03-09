@@ -19,6 +19,15 @@ type StreamColumn struct {
 
 type StreamDescription []StreamColumn
 
+type Stream struct {
+	Values      [][]any
+	description StreamDescription
+}
+
+func NewStream(description StreamDescription, values [][]any) Stream {
+	return Stream{description: description, Values: values}
+}
+
 func (d StreamDescription) Add(name string, t ColumnType) StreamDescription {
 	return append(d, StreamColumn{name: name, t: t})
 }
