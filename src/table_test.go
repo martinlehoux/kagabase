@@ -13,7 +13,7 @@ func TestWriteScanOneInteger(t *testing.T) {
 		Col1 int
 	}
 	file := bytes.NewBuffer([]byte(""))
-	description := []src.ColumnType{src.ColumnInt}
+	description := src.TableDescription{}.Add("col_1", src.ColumnInt)
 	data := []row{{1}, {2}, {3}}
 
 	err := src.Write(description, file, data)
@@ -30,7 +30,7 @@ func TestWriteScanTwoIntegers(t *testing.T) {
 		Col2 int
 	}
 	file := bytes.NewBuffer([]byte(""))
-	description := []src.ColumnType{src.ColumnInt, src.ColumnInt}
+	description := src.TableDescription{}.Add("col_1", src.ColumnInt).Add("col_2", src.ColumnInt)
 	data := []row{{1, 2}, {3, 4}, {5, 6}}
 
 	err := src.Write(description, file, data)
@@ -47,7 +47,7 @@ func TestWriteScanTextAndInteger(t *testing.T) {
 		Col2 int
 	}
 	file := bytes.NewBuffer([]byte(""))
-	description := []src.ColumnType{src.ColumnText, src.ColumnInt}
+	description := src.TableDescription{}.Add("col_1", src.ColumnText).Add("col_2", src.ColumnInt)
 	data := []row{{"a", 1}, {"b", 2}, {"fbd0b811-78e4-4c2f-b96d-0223818dc153", 3}}
 
 	err := src.Write(description, file, data)
@@ -63,7 +63,7 @@ func BenchmarkScanOneInteger(b *testing.B) {
 	type row struct {
 		Col1 int
 	}
-	description := []src.ColumnType{src.ColumnInt}
+	description := src.TableDescription{}.Add("col_1", src.ColumnInt)
 	data := make([]row, b.N)
 	for i := 0; i < b.N; i++ {
 		data = append(data, row{i})
