@@ -17,7 +17,7 @@ func TestTableDescription(t *testing.T) {
 
 }
 
-func TestWriteReadOneInteger(t *testing.T) {
+func TestWriteScanOneInteger(t *testing.T) {
 	type row struct {
 		Col1 int
 	}
@@ -28,12 +28,12 @@ func TestWriteReadOneInteger(t *testing.T) {
 	err := src.Write(description, file, data)
 	assert.NoError(t, err)
 
-	values, err := src.Read[row](file)
+	values, err := src.Scan[row](file)
 	assert.NoError(t, err)
 	assert.Equal(t, data, values)
 }
 
-func TestWriteReadTwoIntegers(t *testing.T) {
+func TestWriteScanTwoIntegers(t *testing.T) {
 	type row struct {
 		Col1 int
 		Col2 int
@@ -45,12 +45,12 @@ func TestWriteReadTwoIntegers(t *testing.T) {
 	err := src.Write(description, file, data)
 	assert.NoError(t, err)
 
-	values, err := src.Read[row](file)
+	values, err := src.Scan[row](file)
 	assert.NoError(t, err)
 	assert.Equal(t, data, values)
 }
 
-func TestWriteReadTextAndInteger(t *testing.T) {
+func TestWriteScanTextAndInteger(t *testing.T) {
 	type row struct {
 		Col1 string
 		Col2 int
@@ -62,12 +62,12 @@ func TestWriteReadTextAndInteger(t *testing.T) {
 	err := src.Write(description, file, data)
 	assert.NoError(t, err)
 
-	values, err := src.Read[row](file)
+	values, err := src.Scan[row](file)
 	assert.NoError(t, err)
 	assert.Equal(t, data, values)
 }
 
-func BenchmarkReadOneInteger(b *testing.B) {
+func BenchmarkScanOneInteger(b *testing.B) {
 	file := bytes.NewBuffer([]byte(""))
 	type row struct {
 		Col1 int
@@ -80,5 +80,5 @@ func BenchmarkReadOneInteger(b *testing.B) {
 	src.Write(description, file, data)
 	b.ResetTimer()
 
-	src.Read[row](file)
+	src.Scan[row](file)
 }

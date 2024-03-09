@@ -90,7 +90,7 @@ func Write[row any](description TableDescription, writer io.Writer, values []row
 	return nil
 }
 
-func Read[row any](reader io.Reader) ([]row, error) {
+func Scan[row any](reader io.Reader) ([]row, error) {
 	buf := make([]byte, 8)
 	// Read the number of rows
 	_, err := reader.Read(buf[:8])
