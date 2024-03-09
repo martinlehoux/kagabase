@@ -7,14 +7,14 @@ import (
 
 func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
 	var output Stream
-	buf := make([]byte, 8)
+	intBuf := [8]byte{}
 	// Read the number of rows
-	_, err := reader.Read(buf[:8])
+	_, err := reader.Read(intBuf[:])
 	if err != nil {
 		return output, err
 	}
-	numberOfRows := binary.LittleEndian.Uint64(buf[:8])
-	outValues := make([][]any, 0, numberOfRows)
+	numberOfRows := binary.LittleEndian.Uint64(intBuf[:])
+	outValues := make([][]any, numberOfRows)
 	// Read the table description
 	inDescription, err := DecodeStreamDescription(reader)
 	if err != nil {
@@ -40,43 +40,41 @@ func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
 		}
 	}
 
-	buf = make([]byte, 65536)
+	textBuf := [65536]byte{}
 	// Start reading
 	for k := 0; k < int(numberOfRows); k++ {
-		inRow := make([]any, 0, len(inDescription))
-		for _, col := range inDescription {
+		outRow := make([]any, len(output.description))
+		for inColNumber, col := range inDescription {
 			switch col.t {
 			case ColumnInt:
 				{
-					_, err := reader.Read(buf[:8])
+					_, err := reader.Read(intBuf[:8])
 					if err != nil {
 						return output, err
 					}
-					inRow = append(inRow, int64(binary.LittleEndian.Uint64(buf[:8])))
+					if outColNumber := inOutMapping[inColNumber]; outColNumber != -1 {
+						outRow[outColNumber] = int64(binary.LittleEndian.Uint64(intBuf[:8]))
+					}
 				}
 			case ColumnText:
 				{
-					_, err := reader.Read(buf[:2])
+					_, err := reader.Read(intBuf[:2])
 					if err != nil {
 						return output, err
 					}
-					textLength := int(binary.LittleEndian.Uint16(buf[:2]))
-					_, err = reader.Read(buf[:textLength])
+					textLength := int(binary.LittleEndian.Uint16(intBuf[:2]))
+					_, err = reader.Read(textBuf[:textLength])
 					if err != nil {
 						return output, err
 					}
-					// TODO: Null termination
-					inRow = append(inRow, string(buf[:textLength]))
+					if outColNumber := inOutMapping[inColNumber]; outColNumber != -1 {
+						// TODO: Null termination
+						outRow[outColNumber] = string(textBuf[:textLength])
+					}
 				}
 			}
 		}
-		outRow := make([]any, len(output.description))
-		for i, j := range inOutMapping {
-			if j != -1 {
-				outRow[j] = inRow[i]
-			}
-		}
-		outValues = append(outValues, outRow)
+		outValues[k] = outRow
 	}
 	output.Values = outValues
 	return output, nil
