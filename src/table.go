@@ -4,71 +4,137 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"reflect"
 )
 
-type ColumnType uint
+type ColumnType uint8
 
 const (
-	ColumnInt  ColumnType = 1
-	ColumnText ColumnType = 2
+	ColumnInt  ColumnType = 1 // 8 bytes
+	ColumnText ColumnType = 2 // 2 byte for the length + n bytes for the text (max 65536)
 )
 
-type Table struct {
-	Description []ColumnType
-	Writer      io.Writer
-	Reader      io.Reader
+type TableDescription []ColumnType
+
+func (d TableDescription) Encode() []byte {
+	buf := make([]byte, len(d)+1)
+	buf[0] = byte(len(d))
+	for i, c := range d {
+		buf[i+1] = byte(c)
+	}
+	return buf
+}
+
+func DecodeDescription(reader io.Reader) (TableDescription, error) {
+	d := TableDescription{}
+	// Read the number of columns
+	ncb := make([]byte, 1)
+	_, err := reader.Read(ncb)
+	if err != nil {
+		return d, err
+	}
+	nc := uint8(ncb[0])
+	// Read the column types
+	buf := make([]byte, nc)
+	_, err = reader.Read(buf)
+	if err != nil {
+		return d, err
+	}
+	for i := uint8(0); i < nc; i++ {
+		d = append(d, ColumnType(buf[i]))
+	}
+	return d, nil
+}
+
+func (d TableDescription) FromStruct() error {
+	return nil
 }
 
 var ErrorRowSizeMismatch = errors.New("row size mismatch")
 
-func (t *Table) Write(values [][]int, rSize uint) error {
+func Write[row any](description TableDescription, writer io.Writer, values []row) error {
 	buf := make([]byte, 8)
-	// Write the table description
-	t.Writer.Write([]byte{byte(rSize)})
 	// Write the number of rows
 	binary.LittleEndian.PutUint64(buf, uint64(len(values)))
-	t.Writer.Write(buf)
+	writer.Write(buf[:8])
+	writer.Write(description.Encode())
 	for _, r := range values {
-		if uint(len(r)) != rSize {
+		v := reflect.ValueOf(r)
+		if v.NumField() != len(description) {
 			return ErrorRowSizeMismatch
 		}
-		for _, v := range r {
-			binary.LittleEndian.PutUint64(buf, uint64(v))
-			if _, err := t.Writer.Write(buf); err != nil {
-				return err
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			switch field.Kind() {
+			case reflect.Int:
+				{
+					binary.LittleEndian.PutUint64(buf, uint64(field.Int()))
+					if _, err := writer.Write(buf[:8]); err != nil {
+						return err
+					}
+				}
+			case reflect.String:
+				{
+					s := field.String()
+					binary.LittleEndian.PutUint16(buf, uint16(len(s)))
+					if _, err := writer.Write(buf[:2]); err != nil {
+						return err
+					}
+					if _, err := writer.Write([]byte(s)); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func (t *Table) Read() ([][]int, error) {
+func Read[row any](reader io.Reader) ([]row, error) {
 	buf := make([]byte, 8)
-	// Read the table description
-	_, err := t.Reader.Read(buf[:1])
-	if err != nil {
-		return nil, err
-	}
-	rSize := uint(buf[0])
-	buf = make([]byte, 8*rSize)
 	// Read the number of rows
-	_, err = t.Reader.Read(buf[:8])
+	_, err := reader.Read(buf[:8])
 	if err != nil {
 		return nil, err
 	}
 	tSize := binary.LittleEndian.Uint64(buf[:8])
-	values := make([][]int, 0, tSize)
-	for {
-		_, err := t.Reader.Read(buf)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		row := []int{}
-		for i := 0; i < len(buf); i += 8 {
-			row = append(row, int(binary.LittleEndian.Uint64(buf[i:i+8])))
+	values := make([]row, 0, tSize)
+	// Read the table description
+	_, err = DecodeDescription(reader)
+	if err != nil {
+		return nil, err
+	}
+	buf = make([]byte, 65536)
+	var emptyR row
+	rType := reflect.TypeOf(emptyR)
+	for k := 0; k < int(tSize); k++ {
+		var row row
+		for i := 0; i < rType.NumField(); i++ {
+			field := rType.Field(i)
+			rowV := reflect.ValueOf(&row).Elem().Field(i)
+			switch field.Type.Kind() {
+			case reflect.Int:
+				{
+					_, err := reader.Read(buf[:8])
+					if err != nil {
+						return nil, err
+					}
+					rowV.SetInt(int64(binary.LittleEndian.Uint64(buf[:8])))
+				}
+			case reflect.String:
+				{
+					_, err := reader.Read(buf[:2])
+					if err != nil {
+						return nil, err
+					}
+					textLength := int(binary.LittleEndian.Uint16(buf[:2]))
+					_, err = reader.Read(buf[:textLength])
+					if err != nil {
+						return nil, err
+					}
+					rowV.SetString(string(buf[:textLength]))
+				}
+			}
 		}
 		values = append(values, row)
 	}
