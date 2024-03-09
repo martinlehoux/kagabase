@@ -9,7 +9,7 @@ import (
 
 var ErrorRowSizeMismatch = errors.New("row size mismatch")
 
-func Write[row any](description TableDescription, writer io.Writer, values []row) error {
+func Write[row any](description StreamDescription, writer io.Writer, values []row) error {
 	buf := make([]byte, 8)
 	// Write the number of rows
 	binary.LittleEndian.PutUint64(buf, uint64(len(values)))
@@ -57,7 +57,7 @@ func Scan[row any](reader io.Reader) ([]row, error) {
 	tSize := binary.LittleEndian.Uint64(buf[:8])
 	values := make([]row, 0, tSize)
 	// Read the table description
-	d, err := DecodeDescription(reader)
+	d, err := DecodeStreamDescription(reader)
 	if err != nil {
 		return nil, err
 	}

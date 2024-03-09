@@ -12,18 +12,18 @@ const (
 	ColumnText ColumnType = 2 // 2 bytes for the length + n bytes for the text (max 65536)
 )
 
-type TableColumn struct {
+type StreamColumn struct {
 	t    ColumnType // 1 byte
 	name string     // 256 bytes for 32 characters
 }
 
-type TableDescription []TableColumn
+type StreamDescription []StreamColumn
 
-func (d TableDescription) Add(name string, t ColumnType) TableDescription {
-	return append(d, TableColumn{name: name, t: t})
+func (d StreamDescription) Add(name string, t ColumnType) StreamDescription {
+	return append(d, StreamColumn{name: name, t: t})
 }
 
-func (d TableDescription) Encode() []byte {
+func (d StreamDescription) Encode() []byte {
 	buf := make([]byte, len(d)*(1+256)+1)
 	buf[0] = byte(len(d))
 	for i, c := range d {
@@ -34,8 +34,8 @@ func (d TableDescription) Encode() []byte {
 	return buf
 }
 
-func DecodeDescription(reader io.Reader) (TableDescription, error) {
-	d := TableDescription{}
+func DecodeStreamDescription(reader io.Reader) (StreamDescription, error) {
+	d := StreamDescription{}
 	// Read the number of columns
 	ncb := make([]byte, 1)
 	_, err := reader.Read(ncb)
@@ -51,7 +51,7 @@ func DecodeDescription(reader io.Reader) (TableDescription, error) {
 	}
 	for i := uint8(0); i < nc; i++ {
 		offset := uint(i) * (256 + 1)
-		var c TableColumn
+		var c StreamColumn
 		c.t = ColumnType(buf[offset])
 		c.name = string(bytes.TrimRight(buf[offset+1:offset+256+1], "\x00"))
 		d = append(d, c)
@@ -59,6 +59,6 @@ func DecodeDescription(reader io.Reader) (TableDescription, error) {
 	return d, nil
 }
 
-func (d TableDescription) FromStruct() error {
+func (d StreamDescription) FromStruct() error {
 	return nil
 }

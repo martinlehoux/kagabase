@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTableDescription(t *testing.T) {
-	description := src.TableDescription{}.Add("col_1", src.ColumnInt).Add("col_2", src.ColumnText)
+func TestStreamDescription(t *testing.T) {
+	description := src.StreamDescription{}.Add("col_1", src.ColumnInt).Add("col_2", src.ColumnText)
 	encoded := description.Encode()
-	decoded, err := src.DecodeDescription(bytes.NewReader(encoded))
+	decoded, err := src.DecodeStreamDescription(bytes.NewReader(encoded))
 	assert.NoError(t, err)
 	assert.Equal(t, description, decoded)
 }
