@@ -73,7 +73,7 @@ func BenchmarkReadOneInteger(b *testing.B) {
 		Col1 int
 	}
 	description := []src.ColumnType{src.ColumnInt}
-	data := []row{}
+	data := make([]row, b.N)
 	for i := 0; i < b.N; i++ {
 		data = append(data, row{i})
 	}
