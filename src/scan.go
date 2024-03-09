@@ -13,26 +13,27 @@ func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
 	if err != nil {
 		return output, err
 	}
-	tSize := binary.LittleEndian.Uint64(buf[:8])
-	values := make([][]any, 0, tSize)
+	numberOfRows := binary.LittleEndian.Uint64(buf[:8])
+	outValues := make([][]any, 0, numberOfRows)
 	// Read the table description
 	inDescription, err := DecodeStreamDescription(reader)
 	if err != nil {
 		return output, err
 	}
 
-	outFields := make([]uint8, 0, len(selectedFields))
-	output.description = make(StreamDescription, 0, len(outFields))
+	inOutMapping := make([]int16, len(inDescription))
 	if len(selectedFields) == 0 {
+		output.description = inDescription
 		for i := range inDescription {
-			outFields = append(outFields, uint8(i))
-			output.description = append(output.description, inDescription[i])
+			inOutMapping[i] = int16(i)
 		}
 	} else {
-		for _, fieldName := range selectedFields {
-			for i, col := range inDescription {
+		output.description = make(StreamDescription, 0, len(selectedFields))
+		for i, col := range inDescription {
+			inOutMapping[i] = -1
+			for j, fieldName := range selectedFields {
 				if col.name == fieldName {
-					outFields = append(outFields, uint8(i))
+					inOutMapping[i] = int16(j)
 					output.description = append(output.description, col)
 				}
 			}
@@ -41,7 +42,7 @@ func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
 
 	buf = make([]byte, 65536)
 	// Start reading
-	for k := 0; k < int(tSize); k++ {
+	for k := 0; k < int(numberOfRows); k++ {
 		inRow := make([]any, 0, len(inDescription))
 		for _, col := range inDescription {
 			switch col.t {
@@ -69,12 +70,14 @@ func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
 				}
 			}
 		}
-		outRow := make([]any, 0, len(output.description))
-		for _, i := range outFields {
-			outRow = append(outRow, inRow[i])
+		outRow := make([]any, len(output.description))
+		for i, j := range inOutMapping {
+			if j != -1 {
+				outRow[j] = inRow[i]
+			}
 		}
-		values = append(values, outRow)
+		outValues = append(outValues, outRow)
 	}
-	output.Values = values
+	output.Values = outValues
 	return output, nil
 }
