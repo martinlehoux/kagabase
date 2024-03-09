@@ -100,17 +100,21 @@ func Read[row any](reader io.Reader) ([]row, error) {
 	tSize := binary.LittleEndian.Uint64(buf[:8])
 	values := make([]row, 0, tSize)
 	// Read the table description
-	_, err = DecodeDescription(reader)
+	d, err := DecodeDescription(reader)
 	if err != nil {
 		return nil, err
 	}
 	buf = make([]byte, 65536)
 	var emptyR row
 	rType := reflect.TypeOf(emptyR)
+	fields := make([]reflect.StructField, len(d))
+	for i := 0; i < len(d); i++ {
+		fields[i] = rType.Field(i)
+	}
 	for k := 0; k < int(tSize); k++ {
 		var row row
-		for i := 0; i < rType.NumField(); i++ {
-			field := rType.Field(i)
+		for i := 0; i < len(d); i++ {
+			field := fields[i]
 			rowV := reflect.ValueOf(&row).Elem().Field(i)
 			switch field.Type.Kind() {
 			case reflect.Int:
