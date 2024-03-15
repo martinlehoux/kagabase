@@ -62,22 +62,3 @@ func TestSelectFields(t *testing.T) {
 		[][]any{{"a"}, {"b"}, {"fbd0b811-78e4-4c2f-b96d-0223818dc153"}},
 	), outStream)
 }
-
-func BenchmarkScan1MRows1Integer(b *testing.B) {
-	size := 1_000_000
-	file := bytes.NewBuffer([]byte(""))
-	description := src.StreamDescription{}.Add("col_1", src.ColumnInt)
-	data := make([][]any, size)
-	for i := 0; i < size; i++ {
-		data = append(data, []any{int64(i)})
-	}
-	stream := src.NewStream(description, data)
-	src.Write(file, stream)
-	b.ResetTimer()
-	reader := bytes.NewReader(file.Bytes())
-
-	for i := 0; i < b.N; i++ {
-		reader.Seek(0, 0)
-		src.Scan(reader)
-	}
-}
