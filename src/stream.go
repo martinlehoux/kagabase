@@ -12,6 +12,16 @@ const (
 	ColumnText ColumnType = 2 // 2 bytes for the length + n bytes for the text (max 65536)
 )
 
+func (t *ColumnType) Default() any {
+	switch *t {
+	case ColumnInt:
+		return int64(0)
+	case ColumnText:
+		return ""
+	}
+	return nil
+}
+
 type StreamColumn struct {
 	t    ColumnType // 1 byte
 	name string     // 256 bytes for 32 characters
