@@ -1,7 +1,9 @@
-`benchstat old.txt new.txt`
+## Benchmarking
 
-- go tool pprof -http=":" cpu.prof
 - `go install golang.org/x/perf/cmd/benchstat@latest`
+- `go test -bench=. -count=10 > next.txt`
+- `benchstat current.txt next.txt`
+- go tool pprof -http=":" cpu.prof
 
 ## Migration
 

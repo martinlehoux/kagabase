@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/martinlehoux/kagabase
+cpu: AMD Ryzen 7 5700X 8-Core Processor             
+BenchmarkScan1MRows1Integer-16    	     255	   5691345 ns/op
+BenchmarkScan1MRows1Integer-16    	     217	   5482648 ns/op
+BenchmarkScan1MRows1Integer-16    	     190	   5750096 ns/op
+BenchmarkScan1MRows1Integer-16    	     213	   5226401 ns/op
+BenchmarkScan1MRows1Integer-16    	     225	   5218352 ns/op
+BenchmarkScan1MRows1Integer-16    	     256	   4526516 ns/op
+BenchmarkScan1MRows1Integer-16    	     195	   5804569 ns/op
+BenchmarkScan1MRows1Integer-16    	     222	   4701350 ns/op
+BenchmarkScan1MRows1Integer-16    	     199	   5117403 ns/op
+BenchmarkScan1MRows1Integer-16    	     169	   6098784 ns/op
+PASS
+ok  	github.com/martinlehoux/kagabase	21.426s
