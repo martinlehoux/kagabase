@@ -26,3 +26,7 @@ for (a,c) in table:
   result += (a,c)
 return result
 ```
+
+## Benchmark results
+
+<table><tbody><tr><td>Dataset</td><td>Operation</td><td>Result</td></tr><tr><td>100M integers</td><td>Scan</td><td>5.532 s ± 0.033 s</td></tr></tbody></table>
