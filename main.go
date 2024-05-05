@@ -31,7 +31,7 @@ func benchmark() {
 	}
 	reader := bytes.NewReader(file)
 	reader.Seek(0, 0)
-	src.Scan(reader)
+	src.SeqScan(reader)
 }
 
 func main() {

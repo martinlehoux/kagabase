@@ -9,8 +9,10 @@ type ColumnType uint8
 
 const (
 	ColumnInt  ColumnType = 1 // 8 bytes
-	ColumnText ColumnType = 2 // 2 bytes for the length + n bytes for the text (max 65536)
+	ColumnText ColumnType = 2 // 2 bytes for the length + n bytes for the text (max columnTextMaxLength)
 )
+
+const columnTextMaxLength = 65536
 
 func (t *ColumnType) Default() any {
 	switch *t {

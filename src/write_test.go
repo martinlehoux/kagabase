@@ -16,7 +16,7 @@ func TestWriteScanOneInteger(t *testing.T) {
 	err := inStream.Write(file)
 	assert.NoError(t, err)
 
-	outStream, err := src.Scan(file)
+	outStream, err := src.SeqScan(file)
 	assert.NoError(t, err)
 	assert.Equal(t, inStream, outStream)
 }
@@ -29,7 +29,7 @@ func TestWriteScanTwoIntegers(t *testing.T) {
 	err := inStream.Write(file)
 	assert.NoError(t, err)
 
-	outStream, err := src.Scan(file)
+	outStream, err := src.SeqScan(file)
 	assert.NoError(t, err)
 	assert.Equal(t, inStream, outStream)
 }
@@ -42,7 +42,7 @@ func TestWriteScanTextAndInteger(t *testing.T) {
 	err := inStream.Write(file)
 	assert.NoError(t, err)
 
-	outStream, err := src.Scan(file)
+	outStream, err := src.SeqScan(file)
 	assert.NoError(t, err)
 	assert.Equal(t, inStream, outStream)
 }
@@ -55,7 +55,7 @@ func TestSelectFields(t *testing.T) {
 	err := inStream.Write(file)
 	assert.NoError(t, err)
 
-	outStream, err := src.Scan(file, "col_2")
+	outStream, err := src.SeqScan(file, "col_2")
 	assert.NoError(t, err)
 	assert.Equal(t, src.NewStream(
 		src.StreamDescription{}.Add("col_2", src.ColumnText),

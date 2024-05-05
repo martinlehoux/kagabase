@@ -5,46 +5,68 @@ import (
 	"io"
 )
 
-func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
-	var output Stream
+type StreamHeader struct {
+	numberOfRows uint64
+	description  StreamDescription
+}
+
+func decodeHeader(reader io.Reader) (StreamHeader, error) {
+	var header StreamHeader
 	intBuf := [8]byte{}
-	// Read the number of rows
 	_, err := reader.Read(intBuf[:])
 	if err != nil {
-		return output, err
+		return header, err
 	}
-	numberOfRows := binary.LittleEndian.Uint64(intBuf[:])
-	outValues := make([][]any, numberOfRows)
-	// Read the table description
+	header.numberOfRows = binary.LittleEndian.Uint64(intBuf[:])
 	inDescription, err := DecodeStreamDescription(reader)
 	if err != nil {
-		return output, err
+		return header, err
 	}
+	header.description = inDescription
 
+	return header, nil
+}
+
+func selectFields(inDescription StreamDescription, selectedFields []string) (StreamDescription, []int16) {
 	inOutMapping := make([]int16, len(inDescription))
 	if len(selectedFields) == 0 {
-		output.description = inDescription
+		outDescription := make(StreamDescription, len(inDescription))
+		copy(outDescription, inDescription)
 		for i := range inDescription {
 			inOutMapping[i] = int16(i)
 		}
-	} else {
-		output.description = make(StreamDescription, 0, len(selectedFields))
-		for i, col := range inDescription {
-			inOutMapping[i] = -1
-			for j, fieldName := range selectedFields {
-				if col.name == fieldName {
-					inOutMapping[i] = int16(j)
-					output.description = append(output.description, col)
-				}
+		return outDescription, inOutMapping
+	}
+	outDescription := make(StreamDescription, 0, len(selectedFields))
+	for i, col := range inDescription {
+		inOutMapping[i] = -1
+		for j, fieldName := range selectedFields {
+			if col.name == fieldName {
+				inOutMapping[i] = int16(j)
+				outDescription = append(outDescription, col)
 			}
 		}
 	}
+	return outDescription, inOutMapping
+}
 
-	textBuf := [65536]byte{}
+func SeqScan(reader io.Reader, selectedFields ...string) (Stream, error) {
+	var output Stream
+	header, err := decodeHeader(reader)
+	if err != nil {
+		return output, err
+	}
+
+	outDescription, inOutMapping := selectFields(header.description, selectedFields)
+	output.description = outDescription
+
+	outValues := make([][]any, header.numberOfRows)
+	textBuf := [columnTextMaxLength]byte{}
+	intBuf := [8]byte{}
 	// Start reading
-	for k := 0; k < int(numberOfRows); k++ {
+	for k := 0; k < int(header.numberOfRows); k++ {
 		outRow := make([]any, len(output.description))
-		for inColNumber, col := range inDescription {
+		for inColNumber, col := range header.description {
 			switch col.t {
 			case ColumnInt:
 				{
@@ -78,4 +100,8 @@ func Scan(reader io.Reader, selectedFields ...string) (Stream, error) {
 	}
 	output.Values = outValues
 	return output, nil
+}
+
+func ParallelScan(reader io.Reader, selectedFields ...string) (Stream, error) {
+	return Stream{}, nil
 }

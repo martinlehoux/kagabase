@@ -22,6 +22,6 @@ func BenchmarkScan1MRows1Integer(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		reader.Seek(0, 0)
-		src.Scan(reader)
+		src.SeqScan(reader)
 	}
 }
