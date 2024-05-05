@@ -9,14 +9,14 @@ import (
 
 func BenchmarkScan1MRows1Integer(b *testing.B) {
 	size := 1_000_000
-	file := bytes.NewBuffer([]byte(""))
-	description := src.StreamDescription{}.Add("col_1", src.ColumnInt)
+	file := new(bytes.Buffer)
 	data := make([][]any, size)
+	description := src.StreamDescription{}.Add("col_1", src.ColumnInt)
 	for i := 0; i < size; i++ {
-		data = append(data, []any{int64(i)})
+		data[i] = []any{int64(i)}
 	}
 	stream := src.NewStream(description, data)
-	src.Write(file, stream)
+	stream.Write(file)
 	b.ResetTimer()
 	reader := bytes.NewReader(file.Bytes())
 

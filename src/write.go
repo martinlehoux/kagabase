@@ -8,7 +8,7 @@ import (
 
 var ErrorRowSizeMismatch = errors.New("row size mismatch")
 
-func Write(writer io.Writer, stream Stream) error {
+func (stream *Stream) Write(writer io.Writer) error {
 	buf := make([]byte, 8)
 	// Write the number of rows
 	binary.LittleEndian.PutUint64(buf, uint64(len(stream.Values)))
